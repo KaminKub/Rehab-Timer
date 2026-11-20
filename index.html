@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Core &amp; Spine Rehab Timer — กายภาพบำบัดเสริมแกนกลางลำตัว</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Thai"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Inter', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+          colors: {
+            surface: {
+              950: '#070B10',
+              900: '#0D131B',
+              800: '#151E2B',
+              700: '#1E2A3B',
+            },
+            mint: {
+              400: '#34D399',
+              500: '#10B981',
+            },
+            tealaccent: {
+              400: '#2DD4BF',
+              500: '#14B8A6',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      background-color: #070B10;
+      color: #F1F5F9;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: contain;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    .ring-progress {
+      transition: stroke-dashoffset 0.25s linear, stroke 0.35s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    @keyframes breathePulse {
+      0%, 100% { transform: scale(0.92); opacity: 0.45; }
+      50% { transform: scale(1.08); opacity: 0.9; }
+    }
+    .breathe-dot {
+      animation: breathePulse 8s ease-in-out infinite;
+    }
+    @keyframes slowBreatheRelief {
+      0%, 100% { transform: scale(0.85); opacity: 0.5; }
+      40% { transform: scale(1.15); opacity: 1; }
+    }
+    .breathe-relief {
+      animation: slowBreatheRelief 10s ease-in-out infinite;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0D131B; }
+    ::-webkit-scrollbar-thumb { background: #263447; border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen font-sans antialiased selection:bg-teal-500/30 selection:text-teal-200">
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-[90%] max-w-sm"></div>
+
+  <!-- Main App Shell -->
+  <div class="max-w-xl mx-auto min-h-screen flex flex-col relative">
+
+    <!-- ==================== VIEW 1: HOME / SETUP ==================== -->
+    <div id="view-home" class="flex-1 flex flex-col pb-28 px-4 pt-4 sm:px-6">
+      <!-- Top Header -->
+      <header class="flex items-center justify-between gap-2 mb-5">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-400/20 to-emerald-500/10 border border-teal-400/30 flex items-center justify-center shrink-0">
+            <i data-lucide="activity" class="w-5 h-5 text-teal-400"></i>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-50 truncate">Core &amp; Spine Rehab</h1>
+            <p class="text-xs text-slate-400 truncate">เสริมแกนกลาง &amp; คลายแรงกดกระดูกสันหลัง</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-open-history" type="button" class="relative p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 text-slate-300 hover:text-white hover:border-slate-600 transition" title="ประวัติการฝึก">
+            <i data-lucide="history" class="w-5 h-5"></i>
+            <span id="history-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-teal-500 text-surface-950 text-[10px] font-bold flex items-center justify-center">0</span>
+          </button>
+          <button id="btn-home-sound" type="button" class="p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 text-teal-400 hover:border-slate-600 transition" title="เปิด/ปิดเสียงสัญญาณ">
+            <i data-lucide="volume-2" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Mode Selector -->
+      <section class="mb-5">
+        <div class="flex items-center justify-between mb-2.5">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">1. เลือกโหมดการฝึก (Workout Mode)</h2>
+          <span class="text-[11px] text-teal-400/90 flex items-center gap-1">
+            <i data-lucide="sun" class="w-3.5 h-3.5"></i> กันหน้าจอดับอัตโนมัติ
+          </span>
+        </div>
+        <div id="mode-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- Mode buttons rendered by JS -->
+        </div>
+      </section>
+
+      <!-- Progression & Audio Controls -->
+      <section class="mb-5 bg-surface-900 border border-slate-800 rounded-2xl p-3.5 space-y-3.5">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-300">โหมดการเปลี่ยนท่า (Progression)</span>
+            <span id="progression-hint" class="text-[11px] text-teal-400">จับเวลาออโต้ • นับครั้งกดเอง</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 bg-surface-950 p-1 rounded-xl border border-slate-800/80" id="progression-selector">
+            <button type="button" data-prog="hybrid" class="prog-btn py-2 px-2 rounded-lg text-xs font-semibold transition text-center">อัจฉริยะ</button>
+            <button type="button" data-prog="auto" class="prog-btn py-2 px-2 rounded-lg text-xs font-semibold transition text-center">อัตโนมัติ</button>
+            <button type="button" data-prog="manual" class="prog-btn py-2 px-2 rounded-lg text-xs font-semibold transition text-center">กดข้ามเอง</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <button id="toggle-voice" type="button" class="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-800/70 border border-slate-700/60 text-xs transition">
+            <span class="flex items-center gap-2 text-slate-200">
+              <i data-lucide="mic" class="w-4 h-4 text-teal-400"></i>
+              เสียงพูดนำทาง
+            </span>
+            <span id="status-voice" class="text-[11px] font-bold text-teal-400">เปิด</span>
+          </button>
+          <button id="toggle-prep" type="button" class="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-800/70 border border-slate-700/60 text-xs transition">
+            <span class="flex items-center gap-2 text-slate-200">
+              <i data-lucide="timer" class="w-4 h-4 text-sky-400"></i>
+              เตรียมตัว 5 วิ
+            </span>
+            <span id="status-prep" class="text-[11px] font-bold text-sky-400">เปิด</span>
+          </button>
+          <button id="toggle-breathe" type="button" class="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-800/70 border border-slate-700/60 text-xs transition">
+            <span class="flex items-center gap-2 text-slate-200">
+              <i data-lucide="wind" class="w-4 h-4 text-emerald-400"></i>
+              คุมลมหายใจ
+            </span>
+            <span id="status-breathe" class="text-[11px] font-bold text-emerald-400">เปิด</span>
+          </button>
+          <button id="btn-test-audio" type="button" class="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-800/70 border border-slate-700/60 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition">
+            <span class="flex items-center gap-2">
+              <i data-lucide="bell-ring" class="w-4 h-4 text-amber-400"></i>
+              ทดสอบเสียง
+            </span>
+            <span class="text-[11px] text-slate-400">แตะฟัง</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Routine Exercise List & Customizer -->
+      <section class="flex-1">
+        <div class="flex items-center justify-between mb-2.5">
+          <div>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">2. รายการท่าในโปรแกรม</h2>
+            <p class="text-[11px] text-slate-500 mt-0.5">แตะปุ่มปรับแต่งที่แต่ละท่าเพื่อแก้เซ็ต/เวลาได้อย่างอิสระ</p>
+          </div>
+          <button id="btn-reset-defaults" type="button" class="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-800/70 border border-slate-800 transition">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> รีเซ็ตค่า
+          </button>
+        </div>
+        <div id="exercise-list" class="space-y-2.5">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- Sticky Bottom Start CTA -->
+      <div class="fixed bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-surface-950 via-surface-950/95 to-transparent pt-5 pb-4 px-4">
+        <div class="max-w-xl mx-auto">
+          <button id="btn-start-workout" type="button" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 active:scale-[0.99] text-surface-950 font-extrabold text-lg shadow-lg shadow-teal-500/20 flex items-center justify-between transition">
+            <span class="flex items-center gap-2.5">
+              <i data-lucide="play" class="w-6 h-6 fill-current"></i>
+              <span>เริ่มฝึกเลย</span>
+            </span>
+            <span id="start-summary" class="text-xs font-bold bg-surface-950/15 px-3 py-1 rounded-full">7 ท่า • ~14 นาที</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 2: ACTIVE WORKOUT ==================== -->
+    <div id="view-workout" class="hidden flex-1 flex flex-col justify-between px-4 pt-3 pb-5 sm:px-6 min-h-screen">
+      <!-- Top Bar -->
+      <div>
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <button id="btn-exit-workout" type="button" class="p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 text-slate-300 hover:text-white transition" title="ออกจากหน้าฝึก">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+
+          <div class="flex items-center gap-2">
+            <span id="wakelock-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-800 border border-slate-700 text-slate-400">
+              <span id="wakelock-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+              <span id="wakelock-text">เปิดจอค้าง</span>
+            </span>
+            <span id="workout-step-pill" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-surface-800 border border-slate-700 text-slate-200 tabular-nums">
+              ท่า 1 / 7
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btn-workout-sound" type="button" class="p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 text-teal-400 transition" title="เสียงเตือน">
+              <i data-lucide="volume-2" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-workout-voice" type="button" class="p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 text-teal-400 transition" title="เสียงพูด">
+              <i data-lucide="mic" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-workout-edit" type="button" class="p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 text-slate-300 hover:text-white transition" title="ปรับตั้งค่าท่านี้">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Overall Session Progress Bar -->
+        <div class="w-full h-2 bg-surface-800 rounded-full overflow-hidden mb-3">
+          <div id="overall-progress-bar" class="h-full bg-teal-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Center Floor-View Focus Area -->
+      <main class="flex-1 flex flex-col items-center justify-center my-1">
+        <!-- Phase & Set Badges -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mb-2">
+          <span id="phase-badge" class="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-teal-500/20 text-teal-300 border border-teal-400/40">
+            กำลังฝึก (WORK)
+          </span>
+          <span id="set-badge" class="px-3.5 py-1 rounded-full text-xs font-bold bg-surface-800 text-slate-200 border border-slate-700 tabular-nums">
+            เซ็ตที่ 1 / 3
+          </span>
+          <span id="side-badge" class="hidden px-3.5 py-1 rounded-full text-xs font-extrabold bg-sky-500/20 text-sky-300 border border-sky-400/40">
+            ข้างซ้าย (Left)
+          </span>
+        </div>
+
+        <!-- Exercise Title & Posture Icon -->
+        <div class="text-center mb-3 max-w-md px-2">
+          <div class="flex items-center justify-center gap-2.5">
+            <div id="active-svg-icon" class="w-11 h-11 rounded-xl bg-surface-800/90 border border-slate-700/70 flex items-center justify-center shrink-0 text-teal-400"></div>
+            <div class="text-left">
+              <h2 id="active-title-en" class="text-xl sm:text-2xl font-extrabold text-white leading-tight">Pelvic Tilt</h2>
+              <p id="active-title-th" class="text-sm text-slate-400 font-medium">นอนหงายกดหลังติดพื้น</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Giant High-Contrast Timer / Rep Display Ring -->
+        <div class="relative w-60 h-60 sm:w-64 sm:h-64 flex items-center justify-center my-1">
+          <svg class="w-full h-full" viewBox="0 0 220 220" aria-hidden="true">
+            <circle cx="110" cy="110" r="98" fill="none" stroke="#151E2B" stroke-width="12" />
+            <circle id="timer-ring" class="ring-progress" cx="110" cy="110" r="98" fill="none" stroke="#2DD4BF" stroke-width="12" stroke-linecap="round" stroke-dasharray="615.75" stroke-dashoffset="0" />
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+            <div id="giant-display" class="text-6xl sm:text-7xl font-extrabold tracking-tight tabular-nums text-white leading-none">
+              00:25
+            </div>
+            <div id="giant-sublabel" class="mt-2 text-sm font-semibold text-teal-300">
+              ค้างครั้งละ 3 วิ
+            </div>
+            <!-- Guided Breathing Indicator -->
+            <div id="breathing-indicator" class="mt-2.5 hidden items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-800/90 border border-slate-700/70">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 breathe-dot"></span>
+              <span id="breathing-text" class="text-[11px] font-medium text-slate-300">หายใจเข้า-ออกสม่ำเสมอ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Rest Controls (Visible only during Rest/Transition) -->
+        <div id="rest-quick-bar" class="hidden w-full max-w-md mt-1 mb-2 flex items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-3.5 py-2.5">
+          <div class="min-w-0">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-amber-400">ท่าถัดไป (Up Next)</div>
+            <div id="up-next-label" class="text-sm font-bold text-slate-100 truncate">Dead Bug • เซ็ต 1/3</div>
+          </div>
+          <button id="btn-add-rest" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold border border-amber-400/30 transition">
+            +15 วิ
+          </button>
+        </div>
+
+        <!-- Optional Manual Hold Pacer Button (For Reps+Hold in Manual/Hybrid mode) -->
+        <div id="rep-pacer-bar" class="hidden w-full max-w-md mt-1 mb-2">
+          <button id="btn-toggle-rep-pacer" type="button" class="w-full py-2.5 px-4 rounded-xl bg-surface-800 hover:bg-surface-700 border border-teal-500/30 text-teal-300 text-xs font-bold flex items-center justify-center gap-2 transition">
+            <i data-lucide="timer" class="w-4 h-4"></i>
+            <span id="rep-pacer-btn-text">เปิดจังหวะนับค้าง 3 วิ อัตโนมัติ</span>
+          </button>
+        </div>
+
+        <!-- Form & Safety Cue Card -->
+        <div id="cue-card" class="w-full max-w-md mt-2 bg-surface-900 border border-slate-800 rounded-2xl p-3.5 space-y-2 text-left">
+          <div class="flex items-start gap-2.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-teal-400 shrink-0 mt-0.5"></i>
+            <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+              <span class="font-bold text-teal-300">ฟอร์ม:</span>
+              <span id="cue-form-text">...</span>
+            </p>
+          </div>
+          <div id="cue-safety-row" class="flex items-start gap-2.5 pt-2 border-t border-slate-800/90">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+            <p class="text-xs sm:text-sm text-amber-100/95 leading-relaxed">
+              <span class="font-bold text-amber-400">จุดระวัง:</span>
+              <span id="cue-safety-text">...</span>
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom Giant Controls -->
+      <footer class="w-full max-w-md mx-auto pt-3 space-y-2.5">
+        <!-- Primary Action Button -->
+        <button id="btn-primary-action" type="button" class="w-full py-4 px-5 rounded-2xl bg-teal-400 hover:bg-teal-300 active:scale-[0.99] text-surface-950 font-extrabold text-lg shadow-lg shadow-teal-500/15 flex items-center justify-center gap-2.5 transition">
+          <i id="primary-action-icon" data-lucide="pause" class="w-6 h-6"></i>
+          <span id="primary-action-text">หยุดชั่วคราว</span>
+        </button>
+
+        <!-- Secondary Row: Prev / Skip / Emergency -->
+        <div class="grid grid-cols-12 gap-2">
+          <button id="btn-prev" type="button" class="col-span-3 py-3.5 rounded-xl bg-surface-800 hover:bg-surface-700 border border-slate-700/70 text-slate-200 font-semibold text-xs flex flex-col items-center justify-center gap-1 transition">
+            <i data-lucide="skip-back" class="w-4 h-4"></i>
+            <span>ย้อนกลับ</span>
+          </button>
+          <button id="btn-skip" type="button" class="col-span-3 py-3.5 rounded-xl bg-surface-800 hover:bg-surface-700 border border-slate-700/70 text-slate-200 font-semibold text-xs flex flex-col items-center justify-center gap-1 transition">
+            <i data-lucide="skip-forward" class="w-4 h-4"></i>
+            <span>ข้าม</span>
+          </button>
+          <button id="btn-emergency" type="button" class="col-span-6 py-3.5 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 font-bold text-xs flex items-center justify-center gap-2 transition">
+            <i data-lucide="heart-pulse" class="w-4 h-4 shrink-0 text-rose-400"></i>
+            <span>ปวดตื้อ / พักคลายหลัง</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- ==================== VIEW 3: WORKOUT COMPLETE ==================== -->
+    <div id="view-complete" class="hidden flex-1 flex flex-col justify-center px-4 py-8 sm:px-6">
+      <div class="bg-surface-900 border border-slate-800 rounded-3xl p-6 text-center space-y-5">
+        <div class="w-16 h-16 mx-auto rounded-full bg-teal-400/15 border border-teal-400/40 flex items-center justify-center">
+          <i data-lucide="award" class="w-8 h-8 text-teal-400"></i>
+        </div>
+        <div>
+          <h2 id="complete-heading" class="text-2xl font-extrabold text-white">ฝึกครบโปรแกรมแล้ว!</h2>
+          <p id="complete-sub" class="text-sm text-slate-400 mt-1">ดูแลแกนกลางและคลายหลังได้อย่างปลอดภัย</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 text-center">
+          <div class="bg-surface-800/80 border border-slate-700/60 rounded-2xl p-3">
+            <div id="stat-duration" class="text-lg font-extrabold text-teal-400 tabular-nums">12:40</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">เวลารวม</div>
+          </div>
+          <div class="bg-surface-800/80 border border-slate-700/60 rounded-2xl p-3">
+            <div id="stat-sets" class="text-lg font-extrabold text-white tabular-nums">19</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">เซ็ตที่ทำ</div>
+          </div>
+          <div class="bg-surface-800/80 border border-slate-700/60 rounded-2xl p-3">
+            <div id="stat-cooldown" class="text-lg font-extrabold text-sky-400">ครบ</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">คูลดาวน์</div>
+          </div>
+        </div>
+
+        <!-- Back Comfort Check-in -->
+        <div class="text-left pt-2 border-t border-slate-800">
+          <label class="block text-xs font-semibold text-slate-300 mb-2">บันทึกความรู้สึกหลังล่างวันนี้ (ช่วยติดตามอาการ)</label>
+          <div class="grid grid-cols-3 gap-2" id="comfort-options">
+            <button type="button" data-comfort="relaxed" class="comfort-btn py-2.5 px-2 rounded-xl border border-slate-700 bg-surface-800 text-xs font-semibold text-slate-300 flex flex-col items-center gap-1 transition">
+              <span class="text-lg">😌</span>
+              <span>โล่ง สบายหลัง</span>
+            </button>
+            <button type="button" data-comfort="neutral" class="comfort-btn py-2.5 px-2 rounded-xl border border-slate-700 bg-surface-800 text-xs font-semibold text-slate-300 flex flex-col items-center gap-1 transition">
+              <span class="text-lg">🙂</span>
+              <span>ปกติ / ล้าเบาๆ</span>
+            </button>
+            <button type="button" data-comfort="tight" class="comfort-btn py-2.5 px-2 rounded-xl border border-slate-700 bg-surface-800 text-xs font-semibold text-slate-300 flex flex-col items-center gap-1 transition">
+              <span class="text-lg">😣</span>
+              <span>ตึง / ควรพักเพิ่ม</span>
+            </button>
+          </div>
+          <input id="complete-note" type="text" maxlength="100" placeholder="โน้ตสั้นๆ เช่น วันนี้ Dead Bug หลังไม่ลอยแล้ว..." class="mt-2.5 w-full px-3.5 py-2.5 rounded-xl bg-surface-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-teal-400" />
+        </div>
+
+        <button id="btn-save-finish" type="button" class="w-full py-3.5 rounded-2xl bg-teal-400 hover:bg-teal-300 text-surface-950 font-extrabold text-base transition">
+          บันทึกผล &amp; กลับหน้าหลัก
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== MODAL: EMERGENCY SPINE RELIEF ==================== -->
+  <div id="modal-emergency" class="hidden fixed inset-0 z-50 bg-surface-950/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-md bg-surface-900 border border-rose-500/40 rounded-3xl p-5 space-y-4 my-auto shadow-2xl">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0">
+            <i data-lucide="heart-pulse" class="w-5 h-5 text-rose-400"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-rose-200">โหมดพักคลายหลังฉุกเฉิน</h3>
+            <p class="text-xs text-slate-400">หยุดเวลาฝึกชั่วคราวแล้ว ผ่อนคลายหลังล่างช้าๆ</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Relief Pose Tabs -->
+      <div class="grid grid-cols-2 gap-1.5 bg-surface-950 p-1 rounded-xl border border-slate-800">
+        <button type="button" data-relief="seated" class="relief-tab py-2 px-2 rounded-lg text-xs font-bold transition bg-rose-500/20 text-rose-200">นั่งก้มแตะข้อเท้า</button>
+        <button type="button" data-relief="supine" class="relief-tab py-2 px-2 rounded-lg text-xs font-bold transition text-slate-400">นอนหงายพาดขา 90°</button>
+      </div>
+
+      <!-- Relief Guidance Card -->
+      <div class="bg-surface-950/90 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
+        <div class="flex items-center justify-center gap-3">
+          <div id="relief-svg" class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-300 shrink-0"></div>
+          <div class="text-left">
+            <div id="relief-title" class="text-sm font-bold text-white">Seated Forward Bend</div>
+            <p id="relief-desc" class="text-xs text-slate-300 mt-1 leading-relaxed">
+              นั่งบนเก้าอี้ ค่อยๆ ก้มศีรษะและลำตัวลง ปล่อยแขนห้อยแตะข้อเท้า เปิดช่องว่างข้อต่อ L5-S1
+            </p>
+          </div>
+        </div>
+
+        <!-- 60s Decompression Timer + 4-6 Breathing -->
+        <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-rose-400/20 border border-rose-400/40 flex items-center justify-center">
+              <span class="w-3 h-3 rounded-full bg-rose-400 breathe-relief"></span>
+            </div>
+            <div class="text-left">
+              <div class="text-[11px] font-bold text-rose-300">หายใจเข้า 4 วิ • ออกยาว 6 วิ</div>
+              <div class="text-[10px] text-slate-400">ปล่อยไหล่และเอวให้คลายตัว</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="relief-timer" class="text-2xl font-extrabold tabular-nums text-white">01:00</span>
+            <button id="btn-relief-toggle" type="button" class="p-2 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 transition" title="เริ่ม/หยุดจับเวลาคลายหลัง">
+              <i id="relief-play-icon" data-lucide="play" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Action Buttons -->
+      <div class="space-y-2">
+        <button id="btn-relief-resume" type="button" class="w-full py-3 rounded-xl bg-teal-400 hover:bg-teal-300 text-surface-950 font-extrabold text-sm transition">
+          อาการดีขึ้นแล้ว • กลับไปฝึกต่อ
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-relief-skip" type="button" class="py-2.5 px-3 rounded-xl bg-surface-800 hover:bg-surface-700 border border-slate-700 text-slate-200 font-semibold text-xs transition">
+            ข้ามท่าเมื่อกี้
+          </button>
+          <button id="btn-relief-end" type="button" class="py-2.5 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-semibold text-xs transition">
+            หยุดพักวันนี้เลย
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EXERCISE CUSTOMIZER ==================== -->
+  <div id="modal-edit-ex" class="hidden fixed inset-0 z-50 bg-surface-950/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="w-full max-w-md bg-surface-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 id="edit-ex-title" class="text-base font-extrabold text-white">ปรับแต่งท่าออกกำลังกาย</h3>
+          <p id="edit-ex-sub" class="text-xs text-slate-400">ปรับค่าเฉพาะท่านี้ได้ตามความพร้อมของร่างกาย</p>
+        </div>
+        <button id="btn-close-edit" type="button" class="p-2 rounded-xl bg-surface-800 text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Sets -->
+        <div class="flex items-center justify-between bg-surface-800/70 px-3.5 py-2.5 rounded-xl border border-slate-700/60">
+          <span class="text-sm font-medium text-slate-200">จำนวนเซ็ต (Sets)</span>
+          <div class="flex items-center gap-3">
+            <button type="button" data-field="sets" data-delta="-1" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">-</button>
+            <span id="val-sets" class="w-10 text-center font-extrabold text-white tabular-nums">3</span>
+            <button type="button" data-field="sets" data-delta="1" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">+</button>
+          </div>
+        </div>
+
+        <!-- Work Value (Reps or Seconds) -->
+        <div class="flex items-center justify-between bg-surface-800/70 px-3.5 py-2.5 rounded-xl border border-slate-700/60">
+          <span id="label-work-field" class="text-sm font-medium text-slate-200">จำนวนครั้ง (Reps)</span>
+          <div class="flex items-center gap-3">
+            <button type="button" data-field="work" data-delta="-1" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">-</button>
+            <span id="val-work" class="w-12 text-center font-extrabold text-teal-400 tabular-nums">12</span>
+            <button type="button" data-field="work" data-delta="1" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">+</button>
+          </div>
+        </div>
+
+        <!-- Hold Seconds (only for reps_hold) -->
+        <div id="row-hold-field" class="flex items-center justify-between bg-surface-800/70 px-3.5 py-2.5 rounded-xl border border-slate-700/60">
+          <span class="text-sm font-medium text-slate-200">ค้างจังหวะต่อครั้ง (วินาที)</span>
+          <div class="flex items-center gap-3">
+            <button type="button" data-field="holdSec" data-delta="-1" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">-</button>
+            <span id="val-holdSec" class="w-12 text-center font-extrabold text-sky-400 tabular-nums">3 วิ</span>
+            <button type="button" data-field="holdSec" data-delta="1" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">+</button>
+          </div>
+        </div>
+
+        <!-- Set Rest -->
+        <div class="flex items-center justify-between bg-surface-800/70 px-3.5 py-2.5 rounded-xl border border-slate-700/60">
+          <span class="text-sm font-medium text-slate-200">พักระหว่างเซ็ต (วินาที)</span>
+          <div class="flex items-center gap-3">
+            <button type="button" data-field="setRest" data-delta="-5" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">-</button>
+            <span id="val-setRest" class="w-12 text-center font-extrabold text-amber-400 tabular-nums">30 วิ</span>
+            <button type="button" data-field="setRest" data-delta="5" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">+</button>
+          </div>
+        </div>
+
+        <!-- Transition Rest -->
+        <div class="flex items-center justify-between bg-surface-800/70 px-3.5 py-2.5 rounded-xl border border-slate-700/60">
+          <span class="text-sm font-medium text-slate-200">พักเปลี่ยนท่า (วินาที)</span>
+          <div class="flex items-center gap-3">
+            <button type="button" data-field="transitionRest" data-delta="-5" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">-</button>
+            <span id="val-transitionRest" class="w-12 text-center font-extrabold text-amber-400 tabular-nums">45 วิ</span>
+            <button type="button" data-field="transitionRest" data-delta="5" class="step-btn w-8 h-8 rounded-lg bg-surface-950 border border-slate-700 text-slate-200 font-bold">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-save-edit" type="button" class="w-full py-3.5 rounded-2xl bg-teal-400 hover:bg-teal-300 text-surface-950 font-extrabold text-sm transition">
+        บันทึกการเปลี่ยนแปลง
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: HISTORY ==================== -->
+  <div id="modal-history" class="hidden fixed inset-0 z-50 bg-surface-950/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="w-full max-w-md max-h-[82vh] flex flex-col bg-surface-900 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-white">ประวัติการฝึก &amp; อาการหลัง</h3>
+          <p class="text-xs text-slate-400">บันทึกไว้ในอุปกรณ์ของคุณ</p>
+        </div>
+        <button id="btn-close-history" type="button" class="p-2 rounded-xl bg-surface-800 text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="history-list" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+      <div class="pt-3 mt-3 border-t border-slate-800 flex items-center justify-between">
+        <button id="btn-clear-history" type="button" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">ล้างประวัติทั้งหมด</button>
+        <button id="btn-done-history" type="button" class="px-4 py-2 rounded-xl bg-surface-800 text-xs font-bold text-slate-200 hover:bg-surface-700">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: CONFIRM DIALOG ==================== -->
+  <div id="modal-confirm" class="hidden fixed inset-0 z-50 bg-surface-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-surface-900 border border-slate-700/80 rounded-3xl p-5 space-y-4">
+      <div>
+        <h3 id="confirm-title" class="text-base font-extrabold text-white">ยืนยันการทำรายการ</h3>
+        <p id="confirm-message" class="text-xs text-slate-400 mt-1.5 leading-relaxed">...</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <button id="btn-confirm-cancel" type="button" class="py-2.5 rounded-xl bg-surface-800 text-slate-300 font-bold text-xs hover:bg-surface-700 transition">ยกเลิก</button>
+        <button id="btn-confirm-ok" type="button" class="py-2.5 rounded-xl bg-rose-500 text-white font-bold text-xs hover:bg-rose-400 transition">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // ===================== DEFAULT WORKOUT DATA =====================
+      const DEFAULT_EXERCISES = [
+        // Category 1: Home Core (Set Rest 30s, Transition 45s)
+        {
+          id: 'pelvic_tilt',
+          category: 'home',
+          nameEn: 'Pelvic Tilt',
+          nameTh: 'นอนหงายกดหลังติดพื้น',
+          type: 'reps_hold',
+          sets: 3,
+          work: 12,
+          holdSec: 3,
+          setRest: 30,
+          transitionRest: 45,
+          unilateral: false,
+          unitLabel: 'ครั้ง',
+          formCue: 'นอนหงายชันเข่า หายใจออกพร้อมแขม่วท้องเบาๆ กดหลังส่วนล่างให้แนบสนิทไปกับพื้น (ไม่ให้มีช่องว่างใต้หลัง)',
+          safetyCue: 'ห้ามกลั้นหายใจ ให้หายใจเข้า-ออกปกติขณะเกร็งกดหลัง',
+          svgKey: 'pelvic_tilt'
+        },
+        {
+          id: 'dead_bug',
+          category: 'home',
+          nameEn: 'Dead Bug',
+          nameTh: 'ท่าแมลงตายสลับแขนขา',
+          type: 'reps',
+          sets: 3,
+          work: 16,
+          holdSec: 0,
+          setRest: 30,
+          transitionRest: 45,
+          unilateral: false,
+          unitLabel: 'ครั้ง (ข้างละ 8)',
+          formCue: 'นอนหงายยกเข่าตั้งฉาก 90 องศา ชูแขนตรง ค่อยๆ เหยียดแขนขวาและขาซ้ายลงช้าๆ สลับข้าง',
+          safetyCue: 'กฎเหล็ก: หลังล่างต้องแนบติดพื้นตลอดเวลา ถ้ารู้สึกหลังเริ่มแอ่นลอย ให้ลดระดับขาลงแค่จุดที่หลังยังติดพื้น',
+          svgKey: 'dead_bug'
+        },
+        {
+          id: 'glute_bridge',
+          category: 'home',
+          nameEn: 'Glute Bridge',
+          nameTh: 'นอนหงายยกสะโพก',
+          type: 'reps_hold',
+          sets: 3,
+          work: 12,
+          holdSec: 3,
+          setRest: 30,
+          transitionRest: 45,
+          unilateral: false,
+          unitLabel: 'ครั้ง',
+          formCue: 'นอนหงายชันเข่า ยกสะโพกขึ้นโดยใช้การขมิบก้นและเกร็งหน้าท้องให้ลำตัวเป็นเส้นตรง',
+          safetyCue: 'ห้ามแอ่นอกหรือดันสะโพกสูงเกินจนหลังล่างแอ่นงัด',
+          svgKey: 'glute_bridge'
+        },
+        {
+          id: 'bird_dog',
+          category: 'home',
+          nameEn: 'Bird-Dog',
+          nameTh: 'ท่าคลานสี่ขาเหยียดแขนขา',
+          type: 'reps_hold',
+          sets: 3,
+          work: 16,
+          holdSec: 3,
+          setRest: 30,
+          transitionRest: 45,
+          unilateral: false,
+          unitLabel: 'ครั้ง (ข้างละ 8)',
+          formCue: 'ตั้งท่าคลานสี่ขา แขม่วท้องล็อกเอวให้นิ่ง ค่อยๆ เหยียดแขนซ้ายและขาขวาตรงไปด้านหน้า-หลัง',
+          safetyCue: 'ห้ามยกขาสูงเกินระดับสะโพก เพราะจะทำให้หลังล่างแอ่นและกระตุ้นก้อนแข็งที่เอวขวา',
+          svgKey: 'bird_dog'
+        },
+        {
+          id: 'forearm_plank',
+          category: 'home',
+          nameEn: 'Forearm Plank',
+          nameTh: 'แพลงก์ศอกแบบปรับฟอร์ม',
+          type: 'timer',
+          sets: 3,
+          work: 25,
+          holdSec: 0,
+          setRest: 30,
+          transitionRest: 45,
+          unilateral: false,
+          unitLabel: 'วินาที',
+          formCue: 'วางศอกตรงกับหัวไหล่ ม้วนก้นกบเก็บเข้าด้านใน (Posterior Pelvic Tilt) + ขมิบก้นแน่นๆ หลังส่วนล่างแบนตรง',
+          safetyCue: 'ห้ามปล่อยสะโพกหย่อนแอ่นเด็ดขาด (หากเริ่มล้าให้วางเข่าลงทันที)',
+          svgKey: 'plank'
+        },
+        // Category 2: Pull-up Bar (Set Rest 60s, Transition 60s)
+        {
+          id: 'dead_hang',
+          category: 'bar',
+          nameEn: 'Controlled Dead Hang',
+          nameTh: 'โหนตัวทิ้งน้ำหนักยืดหลัง',
+          type: 'timer',
+          sets: 3,
+          work: 25,
+          holdSec: 0,
+          setRest: 60,
+          transitionRest: 60,
+          unilateral: false,
+          unitLabel: 'วินาที',
+          formCue: 'จับบาร์คว่ำมือกว้างเท่าไหล่ ทิ้งน้ำหนักตัวลงให้กระดูกสันหลังส่วนล่างยืดขยายออก (Spinal Decompression) งอเข่ามาด้านหน้าเล็กน้อย',
+          safetyCue: 'แขม่วท้องเบาๆ ไม่ให้หลังล่างแอ่น ตอนลงให้ค่อยๆ วางเท้า ห้ามกระโดดกระแทกพื้น',
+          svgKey: 'dead_hang'
+        },
+        {
+          id: 'hanging_knee_raises',
+          category: 'bar',
+          nameEn: 'Hanging Knee Raises',
+          nameTh: 'โหนตัวยกเข่าชิดอก',
+          type: 'reps',
+          sets: 3,
+          work: 10,
+          holdSec: 0,
+          setRest: 60,
+          transitionRest: 60,
+          unilateral: false,
+          unitLabel: 'ครั้ง',
+          formCue: 'โหนบาร์แล้วดึงเข่าขึ้นชิดอก เน้นการ "ม้วนก้นกบ/เชิงกรานขึ้นหาหน้าอก" ปล่อยขาลงช้าๆ',
+          safetyCue: 'ให้ทำแบบงอเข่าเท่านั้น ห้ามเหยียดขาตรงเตะขึ้น และห้ามเหวี่ยงตัว',
+          svgKey: 'knee_raises'
+        },
+        {
+          id: 'pull_ups',
+          category: 'bar',
+          nameEn: 'Pull-ups',
+          nameTh: 'ดึงข้อแบบจับคว่ำมือกว้างเท่าไหล่',
+          type: 'reps',
+          sets: 3,
+          work: 6,
+          holdSec: 0,
+          setRest: 60,
+          transitionRest: 60,
+          unilateral: false,
+          unitLabel: 'ครั้ง (หยุดก่อนเสียฟอร์ม)',
+          formCue: 'จับคว่ำมือ (Overhand) ความกว้างเท่าหัวไหล่ เก็บทรงลำตัวให้นิ่ง (Hollow Body) งอเข่ามาด้านหน้าเล็กน้อย เกร็งท้อง 20-30% ตลอดการดึง',
+          safetyCue: 'ห้ามแอ่นหลังหรือดีดตัวเค้นแรงขึ้นเด็ดขาด',
+          svgKey: 'pull_ups'
+        },
+        // Category 3: Mandatory Cooldown (Transition 15s)
+        {
+          id: 'seated_forward_bend',
+          category: 'cooldown',
+          nameEn: 'Seated Forward Bend',
+          nameTh: 'นั่งเก้าอี้ก้มตัวแตะข้อเท้า',
+          type: 'timer',
+          sets: 2,
+          work: 30,
+          holdSec: 0,
+          setRest: 15,
+          transitionRest: 15,
+          unilateral: false,
+          unitLabel: 'วินาที',
+          formCue: 'นั่งบนเก้าอี้ ค่อยๆ ก้มศีรษะและลำตัวลง ปล่อยแขนห้อยลงไปแตะบริเวณข้อเท้า เพื่อเปิดช่องว่างข้อต่อกระดูกสันหลังส่วนล่าง L5-S1',
+          safetyCue: 'ปล่อยคอและไหล่ให้ผ่อนคลาย ไม่ต้องฝืนกระชาก หายใจเข้าออกลึกๆ ช้าๆ',
+          svgKey: 'seated_bend'
+        },
+        {
+          id: 'crescent_lunge',
+          category: 'cooldown',
+          nameEn: 'Modified Crescent Lunge',
+          nameTh: 'ยืดหน้าสะโพกล็อกเชิงกราน',
+          type: 'timer',
+          sets: 2,
+          work: 30,
+          holdSec: 0,
+          setRest: 15,
+          transitionRest: 15,
+          unilateral: true,
+          unitLabel: 'วินาที/ข้าง',
+          formCue: 'ก้าวขาไปข้างหน้า 1 ข้าง ย่อเข่าเล็กน้อย ขาหลังเหยียดตึง ขมิบก้นและแขม่วท้องล็อกเอวตรงไว้แล้วยกแขนขึ้น',
+          safetyCue: 'ห้ามหงายตัวหรือแอ่นหลังไปด้านหลังเด็ดขาด ให้ความรู้สึกตึงอยู่ที่ขาหนีบด้านหน้าเท่านั้น',
+          svgKey: 'lunge'
+        }
+      ];
+
+      const MODES = [
+        {
+          id: 'A',
+          tag: 'โหมด A',
+          title: 'ทำที่บ้าน',
+          subtitle: 'ไม่มีอุปกรณ์ • 5 ท่า + 2 คูลดาวน์',
+          categories: ['home', 'cooldown'],
+          icon: 'home'
+        },
+        {
+          id: 'B',
+          tag: 'โหมด B',
+          title: 'วันมีบาร์โหน',
+          subtitle: 'Pull-up Bar • 3 ท่า + 2 คูลดาวน์',
+          categories: ['bar', 'cooldown'],
+          icon: 'dumbbell'
+        },
+        {
+          id: 'C',
+          tag: 'โหมด C',
+          title: 'รวมทั้งหมด',
+          subtitle: 'Home + Bar • 10 ท่าครบชุด',
+          categories: ['home', 'bar', 'cooldown'],
+          icon: 'layers'
+        }
+      ];
+
+      const POSTURE_SVGS = {
+        pelvic_tilt: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="36" x2="42" y2="36" stroke-opacity="0.35"/><circle cx="11" cy="29" r="3.5"/><path d="M15 32 L27 32 L33 23 L38 35"/><path d="M21 24 L21 29 M18.5 27 L21 29.5 L23.5 27" stroke="#FBBF24"/></svg>',
+        dead_bug: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="36" x2="42" y2="36" stroke-opacity="0.35"/><circle cx="11" cy="30" r="3.5"/><path d="M15 33 L29 33"/><path d="M19 33 L19 18"/><path d="M29 33 L29 22 L38 22"/><path d="M29 33 L39 29" stroke-opacity="0.5"/></svg>',
+        glute_bridge: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="36" x2="42" y2="36" stroke-opacity="0.35"/><circle cx="10" cy="31" r="3.5"/><path d="M14 33 L28 21 L35 23 L38 35"/></svg>',
+        bird_dog: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="37" x2="42" y2="37" stroke-opacity="0.35"/><circle cx="18" cy="18" r="3.2"/><path d="M8 22 L21 22 L32 22 L42 22"/><path d="M22 22 L22 36"/><path d="M31 22 L31 36"/></svg>',
+        plank: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="36" x2="42" y2="36" stroke-opacity="0.35"/><circle cx="11" cy="21" r="3.2"/><path d="M14 23 L39 34"/><path d="M16 24 L15 34 L19 34"/></svg>',
+        dead_hang: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="9" x2="40" y2="9" stroke-opacity="0.45"/><path d="M18 9 L20 19 M30 9 L28 19"/><circle cx="24" cy="17" r="3.2"/><path d="M24 21 L24 33 L21 41 M24 33 L27 41"/></svg>',
+        knee_raises: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="9" x2="40" y2="9" stroke-opacity="0.45"/><path d="M18 9 L20 19 M30 9 L28 19"/><circle cx="24" cy="17" r="3.2"/><path d="M24 21 L24 31 L33 27 L31 36"/></svg>',
+        pull_ups: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="13" x2="40" y2="13" stroke-opacity="0.45"/><path d="M16 13 L18 21 L24 19 L30 21 L32 13"/><circle cx="24" cy="11" r="3.2"/><path d="M24 20 L24 33 L21 41 M24 33 L27 41"/></svg>',
+        seated_bend: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 28 L24 28 L24 39 M14 28 L14 39" stroke-opacity="0.35"/><path d="M18 27 Q27 18 33 27"/><circle cx="35" cy="29" r="3.2"/><path d="M24 28 L31 28 L31 39"/><path d="M31 27 L33 38"/></svg>',
+        lunge: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="39" x2="42" y2="39" stroke-opacity="0.35"/><circle cx="23" cy="13" r="3.2"/><path d="M23 17 L23 28"/><path d="M23 19 L23 7"/><path d="M23 28 L33 28 L33 38"/><path d="M23 28 L13 38"/></svg>',
+        supine_relief: '<svg viewBox="0 0 48 48" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="37" x2="44" y2="37" stroke-opacity="0.35"/><path d="M30 25 L41 25 L41 37" stroke-opacity="0.4"/><circle cx="10" cy="31" r="3.2"/><path d="M14 34 L27 34 L27 23 L38 23"/></svg>'
+      };
+
+      const STORAGE_KEYS = {
+        exercises: 'rehab_timer_exercises_v1',
+        prefs: 'rehab_timer_prefs_v1',
+        history: 'rehab_timer_history_v1'
+      };
+
+      // ===================== STATE =====================
+      const state = {
+        mode: 'A',
+        progression: 'hybrid', // 'hybrid' | 'auto' | 'manual'
+        soundEnabled: true,
+        voiceEnabled: true,
+        prepEnabled: true,
+        breatheEnabled: true,
+        exercises: cloneDefaults(),
+        history: [],
+
+        // Editing modal
+        editingId: null,
+        editDraft: null,
+
+        // Active workout state
+        workout: {
+          active: false,
+          queue: [],
+          exIndex: 0,
+          setIndex: 1,
+          side: null, // null | 'left' | 'right'
+          phase: 'work', // 'prep' | 'work' | 'switch_side' | 'set_rest' | 'transition_rest'
+          paused: false,
+          remainingSec: 0,
+          totalPhaseSec: 0,
+          // Rep pacer state
+          pacerActive: false,
+          pacerRep: 1,
+          pacerStage: 'hold', // 'hold' | 'relax'
+          pacerStageSec: 0,
+          // Stats
+          startedAt: 0,
+          completedSets: 0,
+          completedCooldown: false,
+          endedEarly: false
+        },
+
+        // Emergency relief modal
+        relief: {
+          open: false,
+          pose: 'seated',
+          sec: 60,
+          running: false
+        },
+
+        // Complete screen
+        selectedComfort: 'relaxed'
+      };
+
+      let timerInterval = null;
+      let reliefInterval = null;
+      let wakeLockSentinel = null;
+      let audioCtx = null;
+      let confirmCallback = null;
+
+      function cloneDefaults() {
+        return JSON.parse(JSON.stringify(DEFAULT_EXERCISES));
+      }
+
+      // ===================== SAFE STORAGE =====================
+      function loadStorage() {
+        try {
+          const savedEx = localStorage.getItem(STORAGE_KEYS.exercises);
+          if (savedEx) {
+            const parsed = JSON.parse(savedEx);
+            if (Array.isArray(parsed) && parsed.length === DEFAULT_EXERCISES.length) {
+              state.exercises = DEFAULT_EXERCISES.map(def => {
+                const match = parsed.find(x => x.id === def.id);
+                return match ? { ...def, ...match } : { ...def };
+              });
+            }
+          }
+          const savedPrefs = localStorage.getItem(STORAGE_KEYS.prefs);
+          if (savedPrefs) {
+            const p = JSON.parse(savedPrefs);
+            if (['A', 'B', 'C'].includes(p.mode)) state.mode = p.mode;
+            if (['hybrid', 'auto', 'manual'].includes(p.progression)) state.progression = p.progression;
+            if (typeof p.soundEnabled === 'boolean') state.soundEnabled = p.soundEnabled;
+            if (typeof p.voiceEnabled === 'boolean') state.voiceEnabled = p.voiceEnabled;
+            if (typeof p.prepEnabled === 'boolean') state.prepEnabled = p.prepEnabled;
+            if (typeof p.breatheEnabled === 'boolean') state.breatheEnabled = p.breatheEnabled;
+          }
+          const savedHist = localStorage.getItem(STORAGE_KEYS.history);
+          if (savedHist) {
+            const h = JSON.parse(savedHist);
+            if (Array.isArray(h)) state.history = h;
+          }
+        } catch (e) {
+          // Ignore storage restrictions
+        }
+      }
+
+      function savePrefs() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.prefs, JSON.stringify({
+            mode: state.mode,
+            progression: state.progression,
+            soundEnabled: state.soundEnabled,
+            voiceEnabled: state.voiceEnabled,
+            prepEnabled: state.prepEnabled,
+            breatheEnabled: state.breatheEnabled
+          }));
+        } catch (e) {}
+      }
+
+      function saveExercises() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.exercises, JSON.stringify(state.exercises));
+        } catch (e) {}
+      }
+
+      function saveHistory() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(state.history.slice(0, 30)));
+        } catch (e) {}
+      }
+
+      // ===================== AUDIO & VOICE ENGINE =====================
+      function ensureAudioContext() {
+        try {
+          if (!audioCtx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) audioCtx = new AC();
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+        } catch (e) {}
+      }
+
+      function playTone(freq, durationSec, type = 'sine', gainVal = 0.16, delaySec = 0) {
+        if (!state.soundEnabled) return;
+        ensureAudioContext();
+        if (!audioCtx) return;
+        try {
+          const now = audioCtx.currentTime + delaySec;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(gainVal, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + durationSec + 0.02);
+        } catch (e) {}
+      }
+
+      function playBeepTick() {
+        playTone(660, 0.12, 'sine', 0.15);
+      }
+
+      function playPhaseStartChime() {
+        playTone(523.25, 0.14, 'triangle', 0.16, 0);
+        playTone(783.99, 0.24, 'triangle', 0.18, 0.12);
+      }
+
+      function playRestChime() {
+        playTone(587.33, 0.16, 'sine', 0.14, 0);
+        playTone(440, 0.25, 'sine', 0.14, 0.14);
+      }
+
+      function playCompleteFanfare() {
+        playTone(523.25, 0.15, 'triangle', 0.16, 0);
+        playTone(659.25, 0.15, 'triangle', 0.16, 0.13);
+        playTone(783.99, 0.15, 'triangle', 0.16, 0.26);
+        playTone(1046.5, 0.35, 'triangle', 0.18, 0.39);
+      }
+
+      function speak(text) {
+        if (!state.voiceEnabled) return;
+        try {
+          if (!('speechSynthesis' in window)) return;
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'th-TH';
+          utter.rate = 1.02;
+          utter.pitch = 1.0;
+          const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+          const thVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('th'));
+          if (thVoice) utter.voice = thVoice;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {}
+      }
+
+      // ===================== WAKE LOCK API =====================
+      async function requestWakeLock() {
+        updateWakeLockUI('pending');
+        try {
+          if ('wakeLock' in navigator && navigator.wakeLock) {
+            wakeLockSentinel = await navigator.wakeLock.request('screen');
+            updateWakeLockUI('active');
+            wakeLockSentinel.addEventListener('release', () => {
+              if (!state.workout.active) updateWakeLockUI('off');
+            });
+          } else {
+            updateWakeLockUI('unsupported');
+          }
+        } catch (e) {
+          updateWakeLockUI('unsupported');
+        }
+      }
+
+      async function releaseWakeLock() {
+        try {
+          if (wakeLockSentinel) {
+            await wakeLockSentinel.release();
+            wakeLockSentinel = null;
+          }
+        } catch (e) {}
+        updateWakeLockUI('off');
+      }
+
+      function updateWakeLockUI(status) {
+        const dot = document.getElementById('wakelock-dot');
+        const txt = document.getElementById('wakelock-text');
+        if (!dot || !txt) return;
+        if (status === 'active') {
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          txt.textContent = 'จอสว่างตลอด';
+        } else if (status === 'unsupported') {
+          dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+          txt.textContent = 'โหมดจอปกติ';
+        } else {
+          dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+          txt.textContent = 'เปิดจอค้าง';
+        }
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && state.workout.active) {
+          requestWakeLock();
+        }
+      });
+
+      // ===================== HELPERS =====================
+      function getExercisesForMode(modeId) {
+        const modeObj = MODES.find(m => m.id === modeId) || MODES[0];
+        return state.exercises.filter(ex => modeObj.categories.includes(ex.category));
+      }
+
+      function estimateRoutineMinutes(list) {
+        let totalSec = 0;
+        list.forEach((ex, idx) => {
+          let workPerSet = 0;
+          if (ex.type === 'timer') {
+            workPerSet = ex.unilateral ? (ex.work * 2 + 5) : ex.work;
+          } else if (ex.type === 'reps_hold') {
+            workPerSet = ex.work * ((ex.holdSec || 3) + 2);
+          } else {
+            workPerSet = ex.work * 3.5;
+          }
+          totalSec += workPerSet * ex.sets;
+          totalSec += ex.setRest * Math.max(0, ex.sets - 1);
+          if (idx < list.length - 1) totalSec += ex.transitionRest;
+        });
+        return Math.max(1, Math.round(totalSec / 60));
+      }
+
+      function formatMMSS(sec) {
+        const s = Math.max(0, Math.ceil(sec));
+        const m = Math.floor(s / 60);
+        const rem = s % 60;
+        return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+      }
+
+      function showToast(msg, tone = 'teal') {
+        const container = document.getElementById('toast-container');
+        const el = document.createElement('div');
+        const colors = tone === 'rose'
+          ? 'bg-rose-950/95 border-rose-500/40 text-rose-200'
+          : tone === 'amber'
+            ? 'bg-amber-950/95 border-amber-500/40 text-amber-200'
+            : 'bg-surface-800/95 border-teal-500/40 text-teal-200';
+        el.className = `px-4 py-2.5 rounded-2xl border text-xs font-semibold shadow-xl transition-all duration-300 ${colors}`;
+        el.textContent = msg;
+        container.appendChild(el);
+        setTimeout(() => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(-6px)';
+          setTimeout(() => el.remove(), 300);
+        }, 2300);
+      }
+
+      function openConfirm(title, message, onConfirm) {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        confirmCallback = onConfirm;
+        document.getElementById('modal-confirm').classList.remove('hidden');
+      }
+
+      function closeConfirm() {
+        document.getElementById('modal-confirm').classList.add('hidden');
+        confirmCallback = null;
+      }
+
+      // ===================== RENDER HOME =====================
+      function renderHome() {
+        // Mode Cards
+        const modeContainer = document.getElementById('mode-cards');
+        modeContainer.innerHTML = MODES.map(m => {
+          const active = state.mode === m.id;
+          const list = getExercisesForMode(m.id);
+          const mins = estimateRoutineMinutes(list);
+          return `
+            <button type="button" data-mode="${m.id}" class="mode-card text-left p-3.5 rounded-2xl border transition ${
+              active
+                ? 'bg-teal-500/15 border-teal-400 shadow-md shadow-teal-500/10'
+                : 'bg-surface-900 border-slate-800 hover:border-slate-700'
+            }">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                  active ? 'bg-teal-400 text-surface-950' : 'bg-surface-800 text-slate-400'
+                }">${m.tag}</span>
+                <span class="text-[11px] font-semibold text-slate-400 tabular-nums">~${mins} นาที</span>
+              </div>
+              <div class="font-bold text-sm ${active ? 'text-white' : 'text-slate-200'}">${m.title}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5 leading-snug">${m.subtitle}</div>
+            </button>
+          `;
+        }).join('');
+
+        modeContainer.querySelectorAll('.mode-card').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.mode = btn.dataset.mode;
+            savePrefs();
+            renderHome();
+          });
+        });
+
+        // Progression Selector
+        const hints = {
+          hybrid: 'จับเวลาออโต้ • นับครั้งกดเอง',
+          auto: 'เดินเวลา + นับจังหวะค้างอัตโนมัติ',
+          manual: 'กดปุ่ม "เสร็จสิ้นเซ็ต" เองทุกท่า'
+        };
+        document.getElementById('progression-hint').textContent = hints[state.progression];
+        document.querySelectorAll('.prog-btn').forEach(btn => {
+          const active = btn.dataset.prog === state.progression;
+          btn.className = `prog-btn py-2 px-2 rounded-lg text-xs font-semibold transition text-center ${
+            active
+              ? 'bg-teal-400 text-surface-950 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
+          }`;
+        });
+
+        // Toggle statuses
+        const soundBtn = document.getElementById('btn-home-sound');
+        soundBtn.className = `p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 transition ${
+          state.soundEnabled ? 'text-teal-400' : 'text-slate-500'
+        }`;
+        soundBtn.innerHTML = `<i data-lucide="${state.soundEnabled ? 'volume-2' : 'volume-x'}" class="w-5 h-5"></i>`;
+
+        document.getElementById('status-voice').textContent = state.voiceEnabled ? 'เปิด' : 'ปิด';
+        document.getElementById('status-voice').className = `text-[11px] font-bold ${state.voiceEnabled ? 'text-teal-400' : 'text-slate-500'}`;
+
+        document.getElementById('status-prep').textContent = state.prepEnabled ? 'เปิด' : 'ปิด';
+        document.getElementById('status-prep').className = `text-[11px] font-bold ${state.prepEnabled ? 'text-sky-400' : 'text-slate-500'}`;
+
+        document.getElementById('status-breathe').textContent = state.breatheEnabled ? 'เปิด' : 'ปิด';
+        document.getElementById('status-breathe').className = `text-[11px] font-bold ${state.breatheEnabled ? 'text-emerald-400' : 'text-slate-500'}`;
+
+        // History badge
+        const badge = document.getElementById('history-badge');
+        if (state.history.length > 0) {
+          badge.textContent = String(state.history.length);
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+
+        // Exercise list
+        const list = getExercisesForMode(state.mode);
+        const listEl = document.getElementById('exercise-list');
+        const catHeaders = {
+          home: { label: 'หมวดเสริมแกนกลาง (ทำที่บ้าน)', color: 'text-teal-400' },
+          bar: { label: 'หมวดเสริมพิเศษ (โหนบาร์)', color: 'text-emerald-400' },
+          cooldown: { label: 'คูลดาวน์บังคับปิดท้าย (Mandatory Cooldown)', color: 'text-sky-400' }
+        };
+
+        let lastCat = null;
+        let html = '';
+        list.forEach((ex, i) => {
+          if (ex.category !== lastCat) {
+            lastCat = ex.category;
+            html += `<div class="pt-2 pb-1 flex items-center gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-wider ${catHeaders[ex.category].color}">${catHeaders[ex.category].label}</span>
+              <span class="flex-1 h-px bg-slate-800/90"></span>
+            </div>`;
+          }
+          const workSummary = ex.type === 'timer'
+            ? `${ex.work} วิ${ex.unilateral ? '/ข้าง' : ''}`
+            : ex.type === 'reps_hold'
+              ? `${ex.work} ครั้ง (ค้าง ${ex.holdSec} วิ)`
+              : `${ex.work} ครั้ง`;
+
+          html += `
+            <div class="bg-surface-900 border border-slate-800/90 rounded-2xl p-3 flex items-center gap-3">
+              <div class="w-11 h-11 rounded-xl bg-surface-800 border border-slate-700/60 flex items-center justify-center shrink-0 ${
+                ex.category === 'cooldown' ? 'text-sky-400' : 'text-teal-400'
+              }">
+                ${POSTURE_SVGS[ex.svgKey] || ''}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 tabular-nums">${i + 1}.</span>
+                  <h3 class="text-sm font-bold text-slate-100 truncate">${ex.nameEn}</h3>
+                </div>
+                <p class="text-xs text-slate-400 truncate">${ex.nameTh}</p>
+                <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1 text-[11px] tabular-nums">
+                  <span class="text-teal-400 font-semibold">${ex.sets} เซ็ต × ${workSummary}</span>
+                  <span class="text-amber-400/90">พัก ${ex.setRest}วิ / เปลี่ยน ${ex.transitionRest}วิ</span>
+                </div>
+              </div>
+              <button type="button" data-edit-id="${ex.id}" class="edit-ex-btn p-2.5 rounded-xl bg-surface-800 hover:bg-surface-700 border border-slate-700/60 text-slate-300 hover:text-white shrink-0 transition" title="ปรับแต่งท่านี้">
+                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+        });
+
+        listEl.innerHTML = html;
+        listEl.querySelectorAll('.edit-ex-btn').forEach(btn => {
+          btn.addEventListener('click', () => openEditModal(btn.dataset.editId));
+        });
+
+        // Start summary
+        const mins = estimateRoutineMinutes(list);
+        document.getElementById('start-summary').textContent = `${list.length} ท่า • ~${mins} นาที`;
+
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      // ===================== EDIT EXERCISE MODAL =====================
+      function openEditModal(exId) {
+        const ex = state.exercises.find(x => x.id === exId);
+        if (!ex) return;
+        state.editingId = exId;
+        state.editDraft = { ...ex };
+        document.getElementById('edit-ex-title').textContent = ex.nameEn;
+        document.getElementById('edit-ex-sub').textContent = ex.nameTh;
+        document.getElementById('label-work-field').textContent =
+          ex.type === 'timer' ? 'เวลาทำงานต่อเซ็ต (วินาที)' : 'จำนวนครั้งต่อเซ็ต (Reps)';
+
+        const holdRow = document.getElementById('row-hold-field');
+        if (ex.type === 'reps_hold') {
+          holdRow.classList.remove('hidden');
+        } else {
+          holdRow.classList.add('hidden');
+        }
+        renderEditDraft();
+        document.getElementById('modal-edit-ex').classList.remove('hidden');
+      }
+
+      function renderEditDraft() {
+        const d = state.editDraft;
+        if (!d) return;
+        document.getElementById('val-sets').textContent = d.sets;
+        document.getElementById('val-work').textContent = d.type === 'timer' ? `${d.work} วิ` : d.work;
+        document.getElementById('val-holdSec').textContent = `${d.holdSec} วิ`;
+        document.getElementById('val-setRest').textContent = `${d.setRest} วิ`;
+        document.getElementById('val-transitionRest').textContent = `${d.transitionRest} วิ`;
+      }
+
+      function closeEditModal() {
+        document.getElementById('modal-edit-ex').classList.add('hidden');
+        state.editingId = null;
+        state.editDraft = null;
+      }
+
+      // ===================== WORKOUT ENGINE =====================
+      function currentEx() {
+        return state.workout.queue[state.workout.exIndex];
+      }
+
+      function isCurrentExerciseTimerDriven(ex) {
+        if (ex.type === 'timer') return state.progression !== 'manual';
+        return false;
+      }
+
+      function isCurrentExerciseAutoPaced(ex) {
+        return (ex.type === 'reps_hold' || ex.type === 'reps') && state.progression === 'auto';
+      }
+
+      function startWorkout() {
+        ensureAudioContext();
+        const queue = getExercisesForMode(state.mode).map(ex => ({ ...ex }));
+        if (!queue.length) return;
+
+        state.workout = {
+          active: true,
+          queue,
+          exIndex: 0,
+          setIndex: 1,
+          side: queue[0].unilateral ? 'left' : null,
+          phase: state.prepEnabled ? 'prep' : 'work',
+          paused: false,
+          remainingSec: state.prepEnabled ? 5 : (queue[0].type === 'timer' ? queue[0].work : 0),
+          totalPhaseSec: state.prepEnabled ? 5 : (queue[0].type === 'timer' ? queue[0].work : 0),
+          pacerActive: false,
+          pacerRep: 1,
+          pacerStage: 'hold',
+          pacerStageSec: 0,
+          startedAt: Date.now(),
+          completedSets: 0,
+          completedCooldown: false,
+          endedEarly: false
+        };
+
+        document.getElementById('view-home').classList.add('hidden');
+        document.getElementById('view-complete').classList.add('hidden');
+        document.getElementById('view-workout').classList.remove('hidden');
+        requestWakeLock();
+
+        enterCurrentPhase(true);
+        startMainTicker();
+      }
+
+      function stopMainTicker() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }
+
+      function startMainTicker() {
+        stopMainTicker();
+        timerInterval = setInterval(onTick, 1000);
+      }
+
+      function enterCurrentPhase(announce = true) {
+        const w = state.workout;
+        const ex = currentEx();
+        if (!ex) return;
+
+        w.pacerActive = false;
+
+        if (w.phase === 'prep') {
+          w.totalPhaseSec = 5;
+          w.remainingSec = 5;
+          if (announce) {
+            playBeepTick();
+            speak(`เตรียมตัว ท่า ${ex.nameTh}`);
+          }
+        } else if (w.phase === 'work') {
+          if (ex.type === 'timer') {
+            w.totalPhaseSec = ex.work;
+            w.remainingSec = ex.work;
+            if (announce) {
+              playPhaseStartChime();
+              const sideText = w.side === 'left' ? 'ข้างซ้าย' : w.side === 'right' ? 'ข้างขวา' : '';
+              speak(`เริ่ม ${ex.nameTh} ${sideText} ${ex.work} วินาที`);
+            }
+          } else {
+            w.totalPhaseSec = 0;
+            w.remainingSec = 0;
+            if (isCurrentExerciseAutoPaced(ex)) {
+              startRepPacer(ex);
+            }
+            if (announce) {
+              playPhaseStartChime();
+              speak(`เริ่ม ${ex.nameTh} เซ็ตที่ ${w.setIndex} จำนวน ${ex.work} ครั้ง`);
+            }
+          }
+        } else if (w.phase === 'switch_side') {
+          w.totalPhaseSec = 5;
+          w.remainingSec = 5;
+          if (announce) {
+            playRestChime();
+            speak('สลับข้าง เตรียมตัวข้างขวา 5 วินาที');
+          }
+        } else if (w.phase === 'set_rest') {
+          w.totalPhaseSec = ex.setRest;
+          w.remainingSec = ex.setRest;
+          if (announce) {
+            playRestChime();
+            speak(`พักระหว่างเซ็ต ${ex.setRest} วินาที`);
+          }
+        } else if (w.phase === 'transition_rest') {
+          w.totalPhaseSec = ex.transitionRest;
+          w.remainingSec = ex.transitionRest;
+          const nextEx = w.queue[w.exIndex + 1];
+          if (announce) {
+            playRestChime();
+            if (nextEx) {
+              speak(`พักเปลี่ยนท่า ${ex.transitionRest} วินาที ท่าถัดไป ${nextEx.nameTh}`);
+            }
+          }
+        }
+
+        renderWorkout();
+      }
+
+      function startRepPacer(ex) {
+        const w = state.workout;
+        w.pacerActive = true;
+        w.pacerRep = 1;
+        w.pacerStage = 'hold';
+        w.pacerStageSec = ex.holdSec > 0 ? ex.holdSec : 2;
+      }
+
+      function onTick() {
+        const w = state.workout;
+        if (!w.active || w.paused || state.relief.open) return;
+        const ex = currentEx();
+        if (!ex) return;
+
+        // Case 1: Guided Rep Pacer
+        if (w.phase === 'work' && ex.type !== 'timer' && w.pacerActive) {
+          w.pacerStageSec -= 1;
+          if (w.pacerStageSec <= 0) {
+            if (w.pacerStage === 'hold') {
+              w.pacerStage = 'relax';
+              w.pacerStageSec = 2;
+              playTone(480, 0.08, 'sine', 0.1);
+            } else {
+              if (w.pacerRep >= ex.work) {
+                w.pacerActive = false;
+                completeCurrentWorkUnit();
+                return;
+              } else {
+                w.pacerRep += 1;
+                w.pacerStage = 'hold';
+                w.pacerStageSec = ex.holdSec > 0 ? ex.holdSec : 2;
+                playTone(640, 0.09, 'sine', 0.12);
+              }
+            }
+          }
+          renderWorkout();
+          return;
+        }
+
+        // Case 2: Countdown-based phases
+        const needsCountdown =
+          w.phase === 'prep' ||
+          w.phase === 'switch_side' ||
+          w.phase === 'set_rest' ||
+          w.phase === 'transition_rest' ||
+          (w.phase === 'work' && ex.type === 'timer');
+
+        if (!needsCountdown) return;
+
+        if (w.remainingSec > 0) {
+          w.remainingSec -= 1;
+          // 3-second countdown beeps
+          if (w.remainingSec <= 3 && w.remainingSec >= 1) {
+            playBeepTick();
+          }
+          if (w.remainingSec <= 0) {
+            handlePhaseTimerComplete();
+            return;
+          }
+          renderWorkout();
+        }
+      }
+
+      function handlePhaseTimerComplete() {
+        const w = state.workout;
+        const ex = currentEx();
+        if (!ex) return;
+
+        if (w.phase === 'prep') {
+          w.phase = 'work';
+          enterCurrentPhase(true);
+        } else if (w.phase === 'switch_side') {
+          w.side = 'right';
+          w.phase = 'work';
+          enterCurrentPhase(true);
+        } else if (w.phase === 'work') {
+          // If manual mode on timer exercise, stop at 0 and wait or auto-finish?
+          // Even in manual mode, completing a timed hold should chime and move to rest if auto/hybrid, or prompt next if manual.
+          if (state.progression === 'manual') {
+            playRestChime();
+            renderWorkout();
+          } else {
+            completeCurrentWorkUnit();
+          }
+        } else if (w.phase === 'set_rest') {
+          if (state.progression === 'manual') {
+            playPhaseStartChime();
+            renderWorkout();
+          } else {
+            w.setIndex += 1;
+            w.side = ex.unilateral ? 'left' : null;
+            w.phase = 'work';
+            enterCurrentPhase(true);
+          }
+        } else if (w.phase === 'transition_rest') {
+          if (state.progression === 'manual') {
+            playPhaseStartChime();
+            renderWorkout();
+          } else {
+            advanceToNextExercise();
+          }
+        }
+      }
+
+      function completeCurrentWorkUnit() {
+        const w = state.workout;
+        const ex = currentEx();
+        if (!ex) return;
+
+        // Unilateral Left -> Switch to Right
+        if (ex.unilateral && w.side === 'left') {
+          w.phase = 'switch_side';
+          enterCurrentPhase(true);
+          return;
+        }
+
+        w.completedSets += 1;
+        if (ex.category === 'cooldown' && w.setIndex >= ex.sets && w.exIndex === w.queue.length - 1) {
+          w.completedCooldown = true;
+        }
+
+        // More sets in same exercise?
+        if (w.setIndex < ex.sets) {
+          if (ex.setRest > 0) {
+            w.phase = 'set_rest';
+            enterCurrentPhase(true);
+          } else {
+            w.setIndex += 1;
+            w.side = ex.unilateral ? 'left' : null;
+            w.phase = 'work';
+            enterCurrentPhase(true);
+          }
+        } else {
+          // Last exercise done?
+          if (w.exIndex >= w.queue.length - 1) {
+            w.completedCooldown = true;
+            finishWorkout(false);
+          } else if (ex.transitionRest > 0) {
+            w.phase = 'transition_rest';
+            enterCurrentPhase(true);
+          } else {
+            advanceToNextExercise();
+          }
+        }
+      }
+
+      function advanceToNextExercise() {
+        const w = state.workout;
+        if (w.exIndex >= w.queue.length - 1) {
+          finishWorkout(false);
+          return;
+        }
+        w.exIndex += 1;
+        w.setIndex = 1;
+        const nextEx = currentEx();
+        w.side = nextEx.unilateral ? 'left' : null;
+        w.phase = state.prepEnabled ? 'prep' : 'work';
+        enterCurrentPhase(true);
+      }
+
+      function goToPrevStep() {
+        const w = state.workout;
+        if (w.phase === 'set_rest' || w.phase === 'transition_rest') {
+          w.phase = 'work';
+          enterCurrentPhase(false);
+          return;
+        }
+        if (w.setIndex > 1) {
+          w.setIndex -= 1;
+          w.side = currentEx().unilateral ? 'left' : null;
+          w.phase = 'work';
+          enterCurrentPhase(false);
+          return;
+        }
+        if (w.exIndex > 0) {
+          w.exIndex -= 1;
+          const prevEx = currentEx();
+          w.setIndex = 1;
+          w.side = prevEx.unilateral ? 'left' : null;
+          w.phase = 'work';
+          enterCurrentPhase(false);
+          return;
+        }
+        showToast('อยู่ท่าแรกแล้ว', 'amber');
+      }
+
+      function skipCurrentStep() {
+        const w = state.workout;
+        if (w.phase === 'prep') {
+          w.phase = 'work';
+          enterCurrentPhase(true);
+        } else if (w.phase === 'switch_side') {
+          w.side = 'right';
+          w.phase = 'work';
+          enterCurrentPhase(true);
+        } else if (w.phase === 'set_rest') {
+          w.setIndex += 1;
+          w.side = currentEx().unilateral ? 'left' : null;
+          w.phase = 'work';
+          enterCurrentPhase(true);
+        } else if (w.phase === 'transition_rest') {
+          advanceToNextExercise();
+        } else {
+          // Skip work -> go straight to next exercise or next set
+          completeCurrentWorkUnit();
+        }
+      }
+
+      function finishWorkout(endedEarly) {
+        stopMainTicker();
+        state.workout.active = false;
+        state.workout.endedEarly = endedEarly;
+        releaseWakeLock();
+
+        if (!endedEarly) {
+          playCompleteFanfare();
+          speak('ยินดีด้วย คุณฝึกครบโปรแกรมแล้วครับ');
+        }
+
+        const elapsedSec = Math.max(1, Math.round((Date.now() - state.workout.startedAt) / 1000));
+        document.getElementById('complete-heading').textContent = endedEarly ? 'หยุดพักเพื่อความปลอดภัยแล้ว' : 'ฝึกครบโปรแกรมแล้ว!';
+        document.getElementById('complete-sub').textContent = endedEarly
+          ? 'การฟังสัญญาณร่างกายคือกฎข้อแรกของกายภาพบำบัด'
+          : 'ดูแลแกนกลางและคลายแรงกดกระดูกสันหลังได้อย่างยอดเยี่ยม';
+        document.getElementById('stat-duration').textContent = formatMMSS(elapsedSec);
+        document.getElementById('stat-sets').textContent = String(state.workout.completedSets);
+        document.getElementById('stat-cooldown').textContent = state.workout.completedCooldown ? 'ครบ' : 'บางส่วน';
+        document.getElementById('complete-note').value = '';
+
+        state.selectedComfort = endedEarly ? 'tight' : 'relaxed';
+        renderComfortButtons();
+
+        document.getElementById('view-workout').classList.add('hidden');
+        document.getElementById('view-complete').classList.remove('hidden');
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      // ===================== RENDER WORKOUT SCREEN =====================
+      function renderWorkout() {
+        const w = state.workout;
+        const ex = currentEx();
+        if (!ex) return;
+
+        // Top step pill & overall progress
+        document.getElementById('workout-step-pill').textContent = `ท่า ${w.exIndex + 1} / ${w.queue.length}`;
+        const totalSetsAll = w.queue.reduce((acc, item) => acc + item.sets, 0);
+        const doneSetsBefore = w.queue.slice(0, w.exIndex).reduce((acc, item) => acc + item.sets, 0) + (w.setIndex - 1);
+        const pct = Math.min(100, Math.round((doneSetsBefore / Math.max(1, totalSetsAll)) * 100));
+        const progressBar = document.getElementById('overall-progress-bar');
+        progressBar.style.width = `${pct}%`;
+
+        // Sound/Voice icons
+        const sBtn = document.getElementById('btn-workout-sound');
+        sBtn.className = `p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 transition ${state.soundEnabled ? 'text-teal-400' : 'text-slate-500'}`;
+        sBtn.innerHTML = `<i data-lucide="${state.soundEnabled ? 'volume-2' : 'volume-x'}" class="w-4 h-4"></i>`;
+
+        const vBtn = document.getElementById('btn-workout-voice');
+        vBtn.className = `p-2.5 rounded-xl bg-surface-800 border border-slate-700/70 transition ${state.voiceEnabled ? 'text-teal-400' : 'text-slate-500'}`;
+        vBtn.innerHTML = `<i data-lucide="${state.voiceEnabled ? 'mic' : 'mic-off'}" class="w-4 h-4"></i>`;
+
+        // Phase styling & labels
+        const phaseBadge = document.getElementById('phase-badge');
+        const setBadge = document.getElementById('set-badge');
+        const sideBadge = document.getElementById('side-badge');
+        const ring = document.getElementById('timer-ring');
+        const giant = document.getElementById('giant-display');
+        const sublabel = document.getElementById('giant-sublabel');
+        const breatheEl = document.getElementById('breathing-indicator');
+        const restBar = document.getElementById('rest-quick-bar');
+        const pacerBar = document.getElementById('rep-pacer-bar');
+        const primaryBtn = document.getElementById('btn-primary-action');
+
+        setBadge.textContent = `เซ็ตที่ ${w.setIndex} / ${ex.sets}`;
+
+        if (ex.unilateral && w.side) {
+          sideBadge.classList.remove('hidden');
+          sideBadge.textContent = w.side === 'left' ? 'ข้างซ้าย (Left)' : 'ข้างขวา (Right)';
+        } else {
+          sideBadge.classList.add('hidden');
+        }
+
+        // Exercise title & SVG
+        document.getElementById('active-title-en').textContent = ex.nameEn;
+        document.getElementById('active-title-th').textContent = ex.nameTh;
+        const svgWrap = document.getElementById('active-svg-icon');
+        svgWrap.innerHTML = POSTURE_SVGS[ex.svgKey] || '';
+
+        // Cues
+        document.getElementById('cue-form-text').textContent = ex.formCue;
+        document.getElementById('cue-safety-text').textContent = ex.safetyCue;
+
+        const CIRC = 615.75; // 2 * pi * 98
+        let ringColor = '#2DD4BF';
+        let ringOffset = 0;
+
+        restBar.classList.add('hidden');
+        pacerBar.classList.add('hidden');
+        breatheEl.classList.add('hidden');
+
+        if (w.phase === 'prep') {
+          phaseBadge.textContent = 'เตรียมเข้าท่า (GET READY)';
+          phaseBadge.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/40';
+          ringColor = '#38BDF8';
+          ringOffset = CIRC * (1 - w.remainingSec / Math.max(1, w.totalPhaseSec));
+          giant.textContent = String(w.remainingSec);
+          sublabel.textContent = 'วางมือถือแล้วจัดระเบียบหลัง';
+          sublabel.className = 'mt-2 text-sm font-semibold text-sky-300';
+          progressBar.className = 'h-full bg-sky-400 rounded-full transition-all duration-500';
+        } else if (w.phase === 'switch_side') {
+          phaseBadge.textContent = 'สลับข้าง (SWITCH SIDE)';
+          phaseBadge.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/40';
+          ringColor = '#38BDF8';
+          ringOffset = CIRC * (1 - w.remainingSec / Math.max(1, w.totalPhaseSec));
+          giant.textContent = String(w.remainingSec);
+          sublabel.textContent = 'เตรียมเปลี่ยนเป็นข้างขวา';
+          sublabel.className = 'mt-2 text-sm font-semibold text-sky-300';
+        } else if (w.phase === 'set_rest' || w.phase === 'transition_rest') {
+          const isTrans = w.phase === 'transition_rest';
+          phaseBadge.textContent = isTrans ? 'พักเปลี่ยนท่า (TRANSITION)' : 'พักระหว่างเซ็ต (REST)';
+          phaseBadge.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/40';
+          ringColor = '#F59E0B';
+          ringOffset = CIRC * (1 - w.remainingSec / Math.max(1, w.totalPhaseSec));
+          giant.textContent = formatMMSS(w.remainingSec);
+          sublabel.textContent = w.remainingSec === 0 ? 'ครบเวลาพักแล้ว กดเริ่มต่อ' : 'หายใจลึกๆ คลายกล้ามเนื้อ';
+          sublabel.className = 'mt-2 text-sm font-semibold text-amber-300';
+          progressBar.className = 'h-full bg-amber-400 rounded-full transition-all duration-500';
+
+          // Show Up Next bar
+          restBar.classList.remove('hidden');
+          const nextEx = isTrans ? w.queue[w.exIndex + 1] : ex;
+          const nextSetNum = isTrans ? 1 : (w.setIndex + 1);
+          document.getElementById('up-next-label').textContent = nextEx
+            ? `${nextEx.nameEn} • เซ็ต ${nextSetNum}/${nextEx.sets}`
+            : 'ใกล้เสร็จสิ้นแล้ว';
+        } else {
+          // WORK PHASE
+          const isCooldown = ex.category === 'cooldown';
+          phaseBadge.textContent = isCooldown ? 'คูลดาวน์ (COOLDOWN)' : 'กำลังฝึก (WORK)';
+          phaseBadge.className = isCooldown
+            ? 'px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/40'
+            : 'px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-teal-500/20 text-teal-300 border border-teal-400/40';
+          ringColor = isCooldown ? '#38BDF8' : '#2DD4BF';
+          progressBar.className = `h-full ${isCooldown ? 'bg-sky-400' : 'bg-teal-400'} rounded-full transition-all duration-500`;
+
+          if (state.breatheEnabled) {
+            breatheEl.classList.remove('hidden');
+            breatheEl.classList.add('inline-flex');
+          }
+
+          if (ex.type === 'timer') {
+            ringOffset = CIRC * (1 - w.remainingSec / Math.max(1, w.totalPhaseSec));
+            giant.textContent = formatMMSS(w.remainingSec);
+            sublabel.textContent = w.remainingSec === 0 ? 'ครบเวลาแล้ว! กดเสร็จสิ้นเซ็ต' : `ค้างฟอร์มให้นิ่ง (${ex.work} วิ)`;
+            sublabel.className = `mt-2 text-sm font-semibold ${isCooldown ? 'text-sky-300' : 'text-teal-300'}`;
+          } else if (w.pacerActive) {
+            const prog = (w.pacerRep - 1) / Math.max(1, ex.work);
+            ringOffset = CIRC * (1 - prog);
+            giant.textContent = `${w.pacerRep}/${ex.work}`;
+            sublabel.textContent = w.pacerStage === 'hold'
+              ? `เกร็งค้าง (${w.pacerStageSec} วิ)`
+              : `คลายช้าๆ (${w.pacerStageSec} วิ)`;
+            sublabel.className = `mt-2 text-sm font-bold ${w.pacerStage === 'hold' ? 'text-teal-300' : 'text-amber-300'}`;
+            pacerBar.classList.remove('hidden');
+            document.getElementById('rep-pacer-btn-text').textContent = 'ปิดตัวช่วยนับจังหวะ (นับเอง)';
+          } else {
+            ringOffset = 0;
+            giant.textContent = `${ex.work}`;
+            sublabel.textContent = ex.type === 'reps_hold'
+              ? `ครั้ง • ค้างครั้งละ ${ex.holdSec} วิ`
+              : ex.unitLabel;
+            sublabel.className = 'mt-2 text-sm font-semibold text-teal-300';
+            if (ex.type === 'reps_hold') {
+              pacerBar.classList.remove('hidden');
+              document.getElementById('rep-pacer-btn-text').textContent = `เปิดตัวช่วยนับจังหวะค้าง ${ex.holdSec} วิ`;
+            }
+          }
+        }
+
+        ring.style.stroke = ringColor;
+        ring.style.strokeDashoffset = String(Math.max(0, Math.min(CIRC, ringOffset)));
+
+        // Primary Button appearance & behavior
+        const isManualRepWork = w.phase === 'work' && ex.type !== 'timer' && !w.pacerActive;
+        const isManualTimerDone = w.phase === 'work' && ex.type === 'timer' && w.remainingSec === 0;
+        const isRestPhase = w.phase === 'set_rest' || w.phase === 'transition_rest';
+
+        if (isManualRepWork || isManualTimerDone) {
+          primaryBtn.className = 'w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 active:scale-[0.99] text-surface-950 font-extrabold text-lg shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2.5 transition';
+          primaryBtn.innerHTML = `<i data-lucide="check" class="w-6 h-6"></i><span>เสร็จสิ้นเซ็ต • ${w.setIndex < ex.sets ? 'พักระหว่างเซ็ต' : 'ท่าถัดไป'}</span>`;
+        } else if (isRestPhase) {
+          primaryBtn.className = 'w-full py-4 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 active:scale-[0.99] text-surface-950 font-extrabold text-lg shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2.5 transition';
+          primaryBtn.innerHTML = `<i data-lucide="play" class="w-6 h-6 fill-current"></i><span>พร้อมแล้ว • เริ่มเซ็ตถัดไป</span>`;
+        } else if (w.paused) {
+          primaryBtn.className = 'w-full py-4 px-5 rounded-2xl bg-teal-400 hover:bg-teal-300 active:scale-[0.99] text-surface-950 font-extrabold text-lg shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2.5 transition';
+          primaryBtn.innerHTML = `<i data-lucide="play" class="w-6 h-6 fill-current"></i><span>ทำต่อ (Resume)</span>`;
+        } else {
+          primaryBtn.className = 'w-full py-4 px-5 rounded-2xl bg-surface-800 hover:bg-surface-700 border border-slate-600 active:scale-[0.99] text-white font-extrabold text-lg flex items-center justify-center gap-2.5 transition';
+          primaryBtn.innerHTML = `<i data-lucide="pause" class="w-6 h-6"></i><span>หยุดชั่วคราว (Pause)</span>`;
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      // ===================== EMERGENCY RELIEF MODAL =====================
+      function openEmergencyModal() {
+        state.relief.open = true;
+        state.workout.paused = true;
+        state.relief.sec = 60;
+        state.relief.running = true;
+        renderReliefModal();
+        document.getElementById('modal-emergency').classList.remove('hidden');
+        speak('หยุดเวลาฝึกชั่วคราวแล้ว ค่อยๆ ก้มตัวคลายหลังและหายใจออกยาวๆ ครับ');
+        startReliefTimer();
+      }
+
+      function closeEmergencyModal() {
+        state.relief.open = false;
+        state.relief.running = false;
+        if (reliefInterval) {
+          clearInterval(reliefInterval);
+          reliefInterval = null;
+        }
+        document.getElementById('modal-emergency').classList.add('hidden');
+      }
+
+      function startReliefTimer() {
+        if (reliefInterval) clearInterval(reliefInterval);
+        reliefInterval = setInterval(() => {
+          if (!state.relief.open || !state.relief.running) return;
+          if (state.relief.sec > 0) {
+            state.relief.sec -= 1;
+            document.getElementById('relief-timer').textContent = formatMMSS(state.relief.sec);
+            if (state.relief.sec === 0) {
+              state.relief.running = false;
+              playRestChime();
+              renderReliefModal();
+            }
+          }
+        }, 1000);
+      }
+
+      function renderReliefModal() {
+        const isSeated = state.relief.pose === 'seated';
+        document.getElementById('relief-title').textContent = isSeated
+          ? 'Seated Forward Bend (นั่งก้มแตะข้อเท้า)'
+          : 'Supine 90-90 Relief (นอนพาดขาบนเก้าอี้)';
+        document.getElementById('relief-desc').textContent = isSeated
+          ? 'นั่งบนเก้าอี้ ค่อยๆ ก้มศีรษะและลำตัวลง ปล่อยแขนห้อยแตะข้อเท้า เพื่อเปิดช่องว่างข้อต่อกระดูกสันหลังส่วนล่าง L5-S1'
+          : 'นอนหงายราบบนพื้น วางน่องพาดบนเก้าอี้หรือโซฟาให้เข่าตั้งฉาก 90 องศา เพื่อลดแรงกดทับหมอนรองกระดูกและคลายกล้ามเนื้อเอว';
+        document.getElementById('relief-svg').innerHTML = isSeated
+          ? POSTURE_SVGS.seated_bend
+          : POSTURE_SVGS.supine_relief;
+        document.getElementById('relief-timer').textContent = formatMMSS(state.relief.sec);
+
+        document.querySelectorAll('.relief-tab').forEach(tab => {
+          const active = tab.dataset.relief === state.relief.pose;
+          tab.className = `relief-tab py-2 px-2 rounded-lg text-xs font-bold transition ${
+            active ? 'bg-rose-500/20 text-rose-200' : 'text-slate-400 hover:text-slate-200'
+          }`;
+        });
+
+        const toggleBtn = document.getElementById('btn-relief-toggle');
+        toggleBtn.innerHTML = `<i data-lucide="${state.relief.running ? 'pause' : 'play'}" class="w-4 h-4"></i>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      // ===================== COMPLETE & HISTORY =====================
+      function renderComfortButtons() {
+        document.querySelectorAll('.comfort-btn').forEach(btn => {
+          const active = btn.dataset.comfort === state.selectedComfort;
+          btn.className = `comfort-btn py-2.5 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition ${
+            active
+              ? 'border-teal-400 bg-teal-500/15 text-teal-200'
+              : 'border-slate-700 bg-surface-800 text-slate-300 hover:border-slate-600'
+          }`;
+        });
+      }
+
+      function renderHistoryModal() {
+        const listEl = document.getElementById('history-list');
+        if (!state.history.length) {
+          listEl.innerHTML = '<div class="py-10 text-center text-xs text-slate-500">ยังไม่มีประวัติการฝึก เริ่มเซสชันแรกของคุณได้เลย</div>';
+          return;
+        }
+        const comfortMap = {
+          relaxed: { label: 'โล่ง สบายหลัง', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+          neutral: { label: 'ปกติ / ล้าเบาๆ', cls: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
+          tight: { label: 'ตึง / พักเพิ่ม', cls: 'bg-rose-500/15 text-rose-300 border-rose-500/30' }
+        };
+        listEl.innerHTML = state.history.map(item => {
+          const c = comfortMap[item.comfort] || comfortMap.neutral;
+          return `
+            <div class="bg-surface-800/70 border border-slate-700/60 rounded-2xl p-3 space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold text-white">${item.modeTitle}</span>
+                <span class="text-[11px] text-slate-400">${item.dateStr}</span>
+              </div>
+              <div class="flex items-center justify-between gap-2 text-[11px]">
+                <span class="text-slate-300 tabular-nums">${item.duration} • ${item.sets} เซ็ต</span>
+                <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ${c.cls}">${c.label}</span>
+              </div>
+              ${item.note ? `<p class="text-[11px] text-slate-400 pt-1 border-t border-slate-700/50">"${escapeHtml(item.note)}"</p>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+      }
+
+      // ===================== EVENT LISTENERS =====================
+      function bindEvents() {
+        // Progression buttons
+        document.querySelectorAll('.prog-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.progression = btn.dataset.prog;
+            savePrefs();
+            renderHome();
+          });
+        });
+
+        // Home sound / voice / prep / breathe
+        document.getElementById('btn-home-sound').addEventListener('click', () => {
+          state.soundEnabled = !state.soundEnabled;
+          savePrefs();
+          renderHome();
+          if (state.soundEnabled) playBeepTick();
+        });
+
+        document.getElementById('toggle-voice').addEventListener('click', () => {
+          state.voiceEnabled = !state.voiceEnabled;
+          savePrefs();
+          renderHome();
+          if (state.voiceEnabled) speak('เปิดเสียงพูดนำทางแล้ว');
+        });
+
+        document.getElementById('toggle-prep').addEventListener('click', () => {
+          state.prepEnabled = !state.prepEnabled;
+          savePrefs();
+          renderHome();
+        });
+
+        document.getElementById('toggle-breathe').addEventListener('click', () => {
+          state.breatheEnabled = !state.breatheEnabled;
+          savePrefs();
+          renderHome();
+        });
+
+        document.getElementById('btn-test-audio').addEventListener('click', () => {
+          ensureAudioContext();
+          if (state.soundEnabled) playPhaseStartChime();
+          if (state.voiceEnabled) speak('พร้อมเริ่มฝึกแกนกลางลำตัวครับ');
+          showToast('ทดสอบเสียงสัญญาณเรียบร้อย');
+        });
+
+        // Reset defaults
+        document.getElementById('btn-reset-defaults').addEventListener('click', () => {
+          openConfirm(
+            'รีเซ็ตค่าเริ่มต้นทั้งหมด?',
+            'จำนวนเซ็ต เวลาทำงาน และเวลาพักของทุกท่าจะกลับเป็นค่ามาตรฐานตามโปรแกรมกายภาพบำบัด',
+            () => {
+              state.exercises = cloneDefaults();
+              saveExercises();
+              renderHome();
+              showToast('รีเซ็ตค่าเริ่มต้นเรียบร้อย');
+            }
+          );
+        });
+
+        // Start Workout
+        document.getElementById('btn-start-workout').addEventListener('click', startWorkout);
+
+        // Edit Modal controls
+        document.getElementById('btn-close-edit').addEventListener('click', closeEditModal);
+        document.querySelectorAll('.step-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (!state.editDraft) return;
+            const field = btn.dataset.field;
+            const delta = Number(btn.dataset.delta);
+            const mins = { sets: 1, work: 1, holdSec: 1, setRest: 0, transitionRest: 0 };
+            const maxs = { sets: 10, work: 300, holdSec: 30, setRest: 300, transitionRest: 300 };
+            const step = (field === 'work' && state.editDraft.type === 'timer') ? delta * 5 : delta;
+            state.editDraft[field] = Math.max(mins[field], Math.min(maxs[field], state.editDraft[field] + step));
+            renderEditDraft();
+          });
+        });
+
+        document.getElementById('btn-save-edit').addEventListener('click', () => {
+          if (!state.editDraft || !state.editingId) return;
+          const idx = state.exercises.findIndex(x => x.id === state.editingId);
+          if (idx !== -1) {
+            state.exercises[idx] = { ...state.editDraft };
+            saveExercises();
+          }
+          // If edited during active workout, also update active queue item
+          if (state.workout.active) {
+            const qIdx = state.workout.queue.findIndex(x => x.id === state.editingId);
+            if (qIdx !== -1) {
+              state.workout.queue[qIdx] = { ...state.editDraft };
+              if (qIdx === state.workout.exIndex && state.workout.phase === 'work' && state.editDraft.type === 'timer') {
+                state.workout.totalPhaseSec = state.editDraft.work;
+                state.workout.remainingSec = Math.min(state.workout.remainingSec, state.editDraft.work);
+              }
+            }
+            renderWorkout();
+          } else {
+            renderHome();
+          }
+          closeEditModal();
+          showToast('บันทึกการตั้งค่าแล้ว');
+        });
+
+        // Active Workout controls
+        document.getElementById('btn-exit-workout').addEventListener('click', () => {
+          state.workout.paused = true;
+          renderWorkout();
+          openConfirm(
+            'ออกจากการฝึกตอนนี้?',
+            'ความคืบหน้าของเซสชันนี้จะไม่ถูกบันทึกหากออกก่อนจบ',
+            () => {
+              stopMainTicker();
+              state.workout.active = false;
+              releaseWakeLock();
+              document.getElementById('view-workout').classList.add('hidden');
+              document.getElementById('view-home').classList.remove('hidden');
+              renderHome();
+            }
+          );
+        });
+
+        document.getElementById('btn-workout-sound').addEventListener('click', () => {
+          state.soundEnabled = !state.soundEnabled;
+          savePrefs();
+          renderWorkout();
+        });
+
+        document.getElementById('btn-workout-voice').addEventListener('click', () => {
+          state.voiceEnabled = !state.voiceEnabled;
+          savePrefs();
+          renderWorkout();
+        });
+
+        document.getElementById('btn-workout-edit').addEventListener('click', () => {
+          const ex = currentEx();
+          if (ex) {
+            state.workout.paused = true;
+            renderWorkout();
+            openEditModal(ex.id);
+          }
+        });
+
+        document.getElementById('btn-add-rest').addEventListener('click', () => {
+          state.workout.remainingSec += 15;
+          state.workout.totalPhaseSec = Math.max(state.workout.totalPhaseSec, state.workout.remainingSec);
+          renderWorkout();
+          showToast('เพิ่มเวลาพัก +15 วินาที', 'amber');
+        });
+
+        document.getElementById('btn-toggle-rep-pacer').addEventListener('click', () => {
+          const ex = currentEx();
+          if (!ex) return;
+          if (state.workout.pacerActive) {
+            state.workout.pacerActive = false;
+          } else {
+            state.workout.paused = false;
+            startRepPacer(ex);
+            playPhaseStartChime();
+          }
+          renderWorkout();
+        });
+
+        document.getElementById('btn-primary-action').addEventListener('click', () => {
+          ensureAudioContext();
+          const w = state.workout;
+          const ex = currentEx();
+          if (!ex) return;
+
+          const isManualRepWork = w.phase === 'work' && ex.type !== 'timer' && !w.pacerActive;
+          const isManualTimerDone = w.phase === 'work' && ex.type === 'timer' && w.remainingSec === 0;
+          const isRestPhase = w.phase === 'set_rest' || w.phase === 'transition_rest';
+
+          if (isManualRepWork || isManualTimerDone) {
+            completeCurrentWorkUnit();
+          } else if (isRestPhase) {
+            skipCurrentStep();
+          } else {
+            w.paused = !w.paused;
+            renderWorkout();
+          }
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', goToPrevStep);
+        document.getElementById('btn-skip').addEventListener('click', skipCurrentStep);
+        document.getElementById('btn-emergency').addEventListener('click', openEmergencyModal);
+
+        // Emergency Modal controls
+        document.querySelectorAll('.relief-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            state.relief.pose = tab.dataset.relief;
+            renderReliefModal();
+          });
+        });
+
+        document.getElementById('btn-relief-toggle').addEventListener('click', () => {
+          if (state.relief.sec === 0) state.relief.sec = 60;
+          state.relief.running = !state.relief.running;
+          renderReliefModal();
+        });
+
+        document.getElementById('btn-relief-resume').addEventListener('click', () => {
+          closeEmergencyModal();
+          state.workout.paused = false;
+          renderWorkout();
+          showToast('กลับมาฝึกต่อแล้ว คุมฟอร์มเบาๆ นะครับ');
+        });
+
+        document.getElementById('btn-relief-skip').addEventListener('click', () => {
+          closeEmergencyModal();
+          state.workout.paused = false;
+          advanceToNextExercise();
+          showToast('ข้ามท่าเมื่อกี้แล้ว', 'amber');
+        });
+
+        document.getElementById('btn-relief-end').addEventListener('click', () => {
+          closeEmergencyModal();
+          finishWorkout(true);
+        });
+
+        // Complete Screen controls
+        document.querySelectorAll('.comfort-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.selectedComfort = btn.dataset.comfort;
+            renderComfortButtons();
+          });
+        });
+
+        document.getElementById('btn-save-finish').addEventListener('click', () => {
+          const modeObj = MODES.find(m => m.id === state.mode) || MODES[0];
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) + ' ' +
+            now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+          state.history.unshift({
+            id: Date.now(),
+            modeTitle: `${modeObj.tag}: ${modeObj.title}`,
+            dateStr,
+            duration: document.getElementById('stat-duration').textContent,
+            sets: state.workout.completedSets,
+            comfort: state.selectedComfort,
+            note: document.getElementById('complete-note').value.trim()
+          });
+          saveHistory();
+          document.getElementById('view-complete').classList.add('hidden');
+          document.getElementById('view-home').classList.remove('hidden');
+          renderHome();
+          showToast('บันทึกประวัติการฝึกเรียบร้อย');
+        });
+
+        // History modal
+        document.getElementById('btn-open-history').addEventListener('click', () => {
+          renderHistoryModal();
+          document.getElementById('modal-history').classList.remove('hidden');
+        });
+        document.getElementById('btn-close-history').addEventListener('click', () => {
+          document.getElementById('modal-history').classList.add('hidden');
+        });
+        document.getElementById('btn-done-history').addEventListener('click', () => {
+          document.getElementById('modal-history').classList.add('hidden');
+        });
+        document.getElementById('btn-clear-history').addEventListener('click', () => {
+          if (!state.history.length) return;
+          openConfirm('ล้างประวัติการฝึกทั้งหมด?', 'ข้อมูลการบันทึกอาการหลังย้อนหลังจะถูกลบออกจากอุปกรณ์นี้', () => {
+            state.history = [];
+            saveHistory();
+            renderHistoryModal();
+            renderHome();
+            showToast('ล้างประวัติเรียบร้อย');
+          });
+        });
+
+        // Confirm modal
+        document.getElementById('btn-confirm-cancel').addEventListener('click', closeConfirm);
+        document.getElementById('btn-confirm-ok').addEventListener('click', () => {
+          const cb = confirmCallback;
+          closeConfirm();
+          if (cb) cb();
+        });
+
+        // Keyboard shortcuts during workout
+        document.addEventListener('keydown', (e) => {
+          if (!state.workout.active || state.relief.open) return;
+          if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+          if (e.code === 'Space') {
+            e.preventDefault();
+            document.getElementById('btn-primary-action').click();
+          } else if (e.code === 'ArrowRight') {
+            e.preventDefault();
+            skipCurrentStep();
+          } else if (e.code === 'ArrowLeft') {
+            e.preventDefault();
+            goToPrevStep();
+          } else if (e.key === 'e' || e.key === 'E') {
+            openEmergencyModal();
+          }
+        });
+      }
+
+      // ===================== INIT =====================
+      loadStorage();
+      bindEvents();
+      renderHome();
+    })();
+  </script>
+</body>
+</html>
